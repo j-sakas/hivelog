@@ -14,9 +14,9 @@ from meteostat import Point, Hourly
 from datetime import datetime
 
 
+import scipy.stats as stats
 
-
-file = "C:/Python Scripts/Hive/hivelog.csv"
+file = "hivelog.csv"
 data = pd.read_csv(file)
 
 timestamp = data['Date'] + ' ' + data['Time']
@@ -24,6 +24,7 @@ timestamp = pd.to_datetime(timestamp, dayfirst=True)
 timestamp.rename(index = 'Timestamp', inplace=True)
 data = pd.concat([data, timestamp], axis = 1)
 data.set_index('Timestamp', inplace=True)
+
 
 
 def fetch_meteo(): 
@@ -43,11 +44,11 @@ except NameError:
 
 closest_temp = []
 for row in data.itertuples():
-    closest_temp.append(meteo_data[(timedelta(minutes=-30) < meteo_data.index - row[0]) & (meteo_data.index - row[0] <= timedelta(minutes=30))]['temp'].values)
+    closest_temp.append(float(meteo_data[(timedelta(minutes=-30) < meteo_data.index - row[0]) & (meteo_data.index - row[0] <= timedelta(minutes=30))]['temp'].values))
 data['OutTemp'] = closest_temp
 data['Difference'] = data['SetTemperature'] - data['OutTemp']
 
-def plot_month(data, month=None, outdoor=False,heating = False):
+def plotter(data, month=None, outdoor=False,heating = False):
     if month is not None:
         monthDict={1:'January', 2:'February', 3:'March', 4:'April', 5:'May', 6:'June', 7:'July', 8:'August', 9:'September', 10:'October', 11:'November', 12:'December'}
         monthName = monthDict[month]
@@ -61,13 +62,13 @@ def plot_month(data, month=None, outdoor=False,heating = False):
     fig1, ax = plt.subplots(figsize=[12,6])
     ax.plot(data.index,curtemp,'r',label='Actual temperature')
     ax.plot(data.index,settemp,'g--',alpha=0.3, label = 'Target temperature')
-    ax.set_ylim(min(settemp)*.9,max(temp)*1.05)
+    ax.set_ylim(min(settemp)*.9,max(curtemp)*1.05)
     
     if outdoor  == True:
         ax.plot(data.index,data['OutTemp'], 'b', alpha = 0.4, label = 'Outdoor temperature')
         ax.set_ylim(min(data['OutTemp'])-1,max(curtemp)*1.05)
     if heating == True:
-        plt.vlines(status.index[status == 'ON'], -5, 30, colors='orange', alpha=0.3, label = 'Heating ON'
+        plt.vlines(status.index[status == 'ON'], -5, 30, colors='orange', alpha=0.3, label = 'Heating ON')
                    
     ax.tick_params(axis='x', rotation=90)
     ax.set_xlim(data.index[0]-timedelta(seconds=15*60),data.index[-1])
